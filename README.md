@@ -1,17 +1,19 @@
 # 🤖 CyberPet
 
-Una mascota virtual animada para tu escritorio: un robotito blanco y azul
-que pasea por **toda** la pantalla, siempre visible encima de tus ventanas.
-No hace acciones grandes — camina a puntos aleatorios, rebota al andar,
-parpadea, se balancea y de vez en cuando te saluda con la mano. 👋
+Una mascota virtual para tu escritorio: el robotito blanco y azul de la
+ilustración, estático en su pose, que se desliza suavemente por **toda**
+la pantalla, siempre visible encima de tus ventanas. No hace acciones —
+solo está ahí. 🤖
+
+La imagen del robot está incrustada en el propio programa (generada a
+partir de `assets/robot.svg`), así que el ejecutable es un único archivo.
 
 ## Controles
 
 | Acción | Resultado |
 |---|---|
 | Arrastrar con clic izquierdo | Mueves al robot a donde quieras |
-| Doble clic | Te saluda |
-| Clic derecho | Menú: **Saludar** / **Salir** |
+| Clic derecho | Menú: **Salir** |
 
 ## Cómo obtener el ejecutable (Windows)
 
