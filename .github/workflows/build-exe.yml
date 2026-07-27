@@ -37,13 +37,26 @@ jobs:
       - name: Subir CyberPet.exe a la rama (descarga directa)
         shell: bash
         run: |
-          cp dist/CyberPet.exe CyberPet.exe
+          cp dist/CyberPet.exe /tmp/CyberPet.exe
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add CyberPet.exe
-          git commit -m "Actualizar CyberPet.exe compilado [skip ci]" || echo "sin cambios"
-          git pull --rebase origin "${GITHUB_REF_NAME}"
-          git push origin "HEAD:${GITHUB_REF_NAME}"
+          # Sin rebase de binarios: se reconstruye el commit sobre el origin
+          # más reciente y se reintenta si otra ejecución empujó primero.
+          for intento in 1 2 3; do
+            git fetch origin "${GITHUB_REF_NAME}"
+            git checkout -B "${GITHUB_REF_NAME}" "origin/${GITHUB_REF_NAME}"
+            cp /tmp/CyberPet.exe CyberPet.exe
+            git add CyberPet.exe
+            if ! git commit -m "Actualizar CyberPet.exe compilado [skip ci]"; then
+              echo "sin cambios que subir"
+              break
+            fi
+            if git push origin "HEAD:${GITHUB_REF_NAME}"; then
+              break
+            fi
+            echo "push rechazado, reintento ${intento}"
+            sleep 5
+          done
 
       - name: Publicar release con descarga directa
         shell: bash
@@ -54,4 +67,5 @@ jobs:
           gh release create descarga dist/CyberPet.exe \
             --target "${GITHUB_SHA}" \
             --title "CyberPet — descarga directa" \
-            --notes "Descarga **CyberPet.exe**, doble clic y listo. Si Windows muestra el aviso de SmartScreen: pulsa 'Más información' y luego 'Ejecutar de todas formas' (el aviso sale solo porque el ejecutable no está firmado)."
+            --notes "Descarga **CyberPet.exe**, doble clic y listo. Si Windows muestra el aviso de SmartScreen: pulsa 'Más información' y luego 'Ejecutar de todas formas' (el aviso sale solo porque el ejecutable no está firmado)." \
+            || gh release upload descarga dist/CyberPet.exe --clobber
