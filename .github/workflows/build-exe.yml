@@ -7,6 +7,9 @@ on:
       - claude/cyber-pet-animated-i0ukqk
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   windows-exe:
     runs-on: windows-latest
@@ -30,3 +33,25 @@ jobs:
         with:
           name: CyberPet-Windows
           path: dist/CyberPet.exe
+
+      - name: Subir CyberPet.exe a la rama (descarga directa)
+        shell: bash
+        run: |
+          cp dist/CyberPet.exe CyberPet.exe
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add CyberPet.exe
+          git commit -m "Actualizar CyberPet.exe compilado [skip ci]" || echo "sin cambios"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+
+      - name: Publicar release con descarga directa
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete descarga --cleanup-tag --yes || true
+          gh release create descarga dist/CyberPet.exe \
+            --target "${GITHUB_SHA}" \
+            --title "CyberPet — descarga directa" \
+            --notes "Descarga **CyberPet.exe**, doble clic y listo. Si Windows muestra el aviso de SmartScreen: pulsa 'Más información' y luego 'Ejecutar de todas formas' (el aviso sale solo porque el ejecutable no está firmado)."

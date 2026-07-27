@@ -15,13 +15,13 @@ parpadea, se balancea y de vez en cuando te saluda con la mano. 👋
 
 ## Cómo obtener el ejecutable (Windows)
 
-### Opción 1 — Descargarlo ya compilado (recomendada)
-Cada vez que se sube código, GitHub lo compila automáticamente:
+### Opción 1 — Descarga directa (recomendada)
+Descarga **CyberPet.exe** desde la sección
+[**Releases**](../../releases) del repositorio (release *"CyberPet —
+descarga directa"*) y haz doble clic. ¡Listo!
 
-1. Ve a la pestaña **Actions** de este repositorio.
-2. Abre la ejecución más reciente de **"Build CyberPet.exe"**.
-3. Al final de la página, en **Artifacts**, descarga **CyberPet-Windows**.
-4. Descomprime el `.zip` y haz doble clic en `CyberPet.exe`. ¡Listo!
+El ejecutable también está en la raíz del repositorio (`CyberPet.exe`),
+subido automáticamente por GitHub Actions en cada compilación.
 
 > Nota: Windows SmartScreen puede avisar porque el ejecutable no está
 > firmado. Pulsa "Más información" → "Ejecutar de todas formas".
