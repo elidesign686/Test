@@ -1,6 +1,6 @@
 """CyberPet — mascota de escritorio animada.
 
-Un robotito blanco y azul (estilo kawaii, acabado de plástico brillante)
+Un robotito blanco y azul (estilo cartoon kawaii, contornos definidos)
 que pasea por TODA la pantalla: camina hacia puntos aleatorios, rebota al
 andar, parpadea, se balancea y de vez en cuando saluda con la mano.
 
@@ -22,22 +22,19 @@ from math import atan2, cos, pi, sin
 # Color "llave" que Windows vuelve transparente
 TRANSPARENT = "#ff00fe"
 
-# Paleta (fiel a la imagen de referencia: plástico blanco glossy + azul)
-SHELL_D = "#e3e3df"     # carcasa: tono base sombreado
-SHELL_M = "#efefec"     # carcasa: tono medio
-SHELL_L = "#fbfbf9"     # carcasa: brillo
-SHADE = "#dcdcd8"       # cuello / sombras
-OUTLINE = "#c9c9c4"     # contorno suave de la carcasa
-BLUE = "#2f7fd6"        # azul principal
-BLUE_MED = "#3f8fe0"    # insignia del pecho
+# Paleta (fiel a la imagen de referencia: cartoon blanco/azul con contorno)
+OUT = "#23262b"         # contorno oscuro estilo cartoon
+INK = "#0b0d10"         # negro del visor y pupilas
+W_SHELL = "#fdfdfd"     # blanco de la carcasa
+W_SHADE = "#e8ecef"     # sombra suave
+BLUE = "#3d85d8"        # azul principal
 BLUE_DARK = "#1f5fae"
-BLUE_GLOSS = "#8fc6f2"  # cejas / brillos azules
-GLOW = "#a5dcff"        # brillo de ojos y sonrisa
-VISOR_D = "#0a0f18"     # pantalla de la cara (base)
-VISOR_M = "#141e2e"     # pantalla: banda superior con reflejo
-EYE = "#05080d"
+BLUE_SOFT = "#66aef0"
+BLUE_PALE = "#cfe8fc"   # halo de la insignia
+GLOW_HEART = "#8fd0ff"  # corazón luminoso
+SILVER = "#c9ced4"      # antena / metal
 
-W, H = 200, 244
+W, H = 224, 258
 FPS_MS = 33
 
 
@@ -190,137 +187,160 @@ class CyberPet:
         waving = self.state == "wave"
         bounce = abs(sin(self.walk_phase)) * 4 if walking else 0.0
         bob = sin(self.t * 0.08) * 2 if not walking else 0.0
-        oy = 10 - bounce + bob
+        oy = 8 - bounce + bob
         lean = f * 4 if walking else 0  # la cabeza se adelanta al caminar
 
         def circle(x, y, r, **kw):
             c.create_oval(x - r, y - r, x + r, y + r, **kw)
 
-        def shell_oval(x1, y1, x2, y2):
-            """Óvalo con capas de luz: efecto de plástico blanco glossy."""
-            ow, oh = x2 - x1, y2 - y1
-            c.create_oval(x1, y1, x2, y2, fill=SHELL_D, outline=OUTLINE, width=2)
-            c.create_oval(x1 + ow * 0.05, y1 + oh * 0.04,
-                          x2 - ow * 0.10, y2 - oh * 0.16, fill=SHELL_M, outline="")
-            c.create_oval(x1 + ow * 0.12, y1 + oh * 0.08,
-                          x2 - ow * 0.24, y2 - oh * 0.38, fill=SHELL_L, outline="")
+        def round_rect(x1, y1, x2, y2, r, **kw):
+            pts = [x1 + r, y1, x2 - r, y1, x2, y1, x2, y1 + r,
+                   x2, y2 - r, x2, y2, x2 - r, y2, x1 + r, y2,
+                   x1, y2, x1, y2 - r, x1, y1 + r, x1, y1]
+            c.create_polygon(pts, smooth=True, **kw)
 
-        def limb(x1, y1, x2, y2, thick=13):
-            """Cápsula con contorno (doble línea) para brazos y dedos."""
-            c.create_line(x1, y1, x2, y2, width=thick + 4, fill=OUTLINE,
+        def limb(x1, y1, x2, y2, thick=12):
+            """Cápsula blanca con contorno oscuro (doble línea)."""
+            c.create_line(x1, y1, x2, y2, width=thick + 5, fill=OUT,
                           capstyle=tk.ROUND)
-            c.create_line(x1, y1, x2, y2, width=thick, fill=SHELL_M,
+            c.create_line(x1, y1, x2, y2, width=thick, fill=W_SHELL,
                           capstyle=tk.ROUND)
 
-        # ---- pies (se quedan "en el suelo" y alternan al caminar)
+        def band(x1, y1, x2, y2, frac, half=9):
+            """Anillo azul cruzado sobre un brazo (a la altura frac)."""
+            px, py = x1 + (x2 - x1) * frac, y1 + (y2 - y1) * frac
+            dx, dy = x2 - x1, y2 - y1
+            length = (dx * dx + dy * dy) ** 0.5 or 1.0
+            nx, ny = -dy / length, dx / length
+            c.create_line(px - nx * half, py - ny * half,
+                          px + nx * half, py + ny * half,
+                          width=5, fill=BLUE, capstyle=tk.ROUND)
+
+        # ---- piernas y botas (alternan al caminar)
         lf = -abs(sin(self.walk_phase)) * 5 if walking else 0.0
         rf = -abs(sin(self.walk_phase + pi)) * 5 if walking else 0.0
-        shell_oval(cx - 40, 212 + lf, cx - 6, 236 + lf)
-        shell_oval(cx + 6, 212 + rf, cx + 40, 236 + rf)
+        round_rect(cx - 34, 214 + oy, cx - 10, 240 + oy, 10,
+                   fill=W_SHELL, outline=OUT, width=3)
+        round_rect(cx + 10, 214 + oy, cx + 34, 240 + oy, 10,
+                   fill=W_SHELL, outline=OUT, width=3)
+        for bx1, bx2, step in ((cx - 44, cx - 2, lf), (cx + 2, cx + 44, rf)):
+            c.create_oval(bx1, 228 + step, bx2, 254 + step,
+                          fill=W_SHELL, outline=OUT, width=3)
+            bw = bx2 - bx1
+            c.create_arc(bx1 - bw * 0.45, 230 + step, bx1 + bw * 0.55,
+                         252 + step, start=-62, extent=124, style=tk.ARC,
+                         outline=OUT, width=2)
 
-        # ---- brazo trasero (cuelga; se balancea al caminar)
+        # ---- brazo trasero (cuelga con puño cerrado; se balancea al andar)
         sway = sin(self.walk_phase) * 5 if walking else 0.0
-        bx, by = cx + f * 44, 158 + oy
-        bhx, bhy = cx + f * 62 + sway, 198 + oy
+        bx, by = cx + f * 44, 176 + oy
+        bhx, bhy = cx + f * 60 + sway, 214 + oy
         limb(bx, by, bhx, bhy)
-        circle(bhx, bhy, 11, fill=SHELL_L, outline=OUTLINE, width=2)
-        circle(bx, by, 8, fill=SHELL_L, outline=BLUE, width=3)
+        band(bx, by, bhx, bhy, 0.72)
+        circle(bhx, bhy, 11, fill=W_SHELL, outline=OUT, width=3)
+        c.create_arc(bhx - 7, bhy - 8, bhx + 7, bhy + 2, start=200,
+                     extent=140, style=tk.ARC, outline=OUT, width=2)
 
-        # ---- cuello y cuerpo
-        c.create_oval(cx - 16, 132 + oy, cx + 16, 148 + oy, fill="#c4c4bf", outline="")
-        c.create_oval(cx - 13, 136 + oy, cx + 13, 150 + oy, fill=SHADE, outline="")
-        shell_oval(cx - 50, 140 + oy, cx + 50, 224 + oy)
+        # ---- cuerpo
+        c.create_oval(cx - 48, 162 + oy, cx + 48, 236 + oy,
+                      fill=W_SHELL, outline=OUT, width=3)
+        c.create_arc(cx - 44, 168 + oy, cx + 44, 232 + oy, start=205,
+                     extent=90, style=tk.ARC, outline=W_SHADE, width=6)
 
-        # ---- insignia del pecho: halo, disco azul, casita blanca y corazón
-        circle(cx, 182 + oy, 31, fill="#e6f2fc", outline="#cfe3f4", width=2)
-        circle(cx, 182 + oy, 26, fill=BLUE_MED, outline="")
-        c.create_oval(cx - 21, 160 + oy, cx + 21, 184 + oy, fill="#56a0e6", outline="")
-        c.create_polygon(cx - 17, 183 + oy, cx, 166 + oy, cx + 17, 183 + oy,
-                         fill=SHELL_L, outline="")
-        c.create_rectangle(cx - 13, 183 + oy, cx + 13, 198 + oy,
-                           fill=SHELL_L, outline="")
-        hx, hy = cx + 9, 189 + oy
-        c.create_polygon(hx - 8.4, hy - 0.5, hx + 8.4, hy - 0.5, hx, hy + 9,
-                         fill=BLUE_MED, outline="#ffffff")
-        circle(hx - 4, hy - 2, 4.8, fill=BLUE_MED, outline="#ffffff", width=2)
-        circle(hx + 4, hy - 2, 4.8, fill=BLUE_MED, outline="#ffffff", width=2)
-        c.create_polygon(hx - 7.2, hy + 0.5, hx + 7.2, hy + 0.5, hx, hy + 8,
-                         fill=BLUE_MED, outline="")
+        # ---- insignia del pecho: aro azul luminoso, casita y corazón
+        circle(cx, 199 + oy, 28, fill=BLUE_PALE, outline="")
+        circle(cx, 199 + oy, 24, fill="#4d9df0", outline="#2c6cbe", width=3)
+        circle(cx, 199 + oy, 19, fill="#7fc0f4", outline="")
+        circle(cx, 199 + oy, 14, fill="#a5d4fa", outline="")
+        c.create_polygon(cx - 15, 200 + oy, cx, 185 + oy, cx + 15, 200 + oy,
+                         fill="#ffffff", outline="")
+        c.create_rectangle(cx - 11, 200 + oy, cx + 11, 213 + oy,
+                           fill="#ffffff", outline="")
+        hx, hy = cx + 8, 203 + oy
+        heart = [(0, 9), (0, 9), (-8, 2), (-10.5, -3), (-7, -8), (-2.5, -6.5),
+                 (0, -3.5), (0, -3.5), (2.5, -6.5), (7, -8), (10.5, -3), (8, 2)]
+        c.create_polygon([(hx + px, hy + py) for px, py in heart],
+                         smooth=True, fill=GLOW_HEART,
+                         outline="#ffffff", width=2)
 
-        # ---- orejas (discos azules con profundidad)
+        # ---- cuello
+        round_rect(cx - 20, 152 + oy, cx + 20, 166 + oy, 7,
+                   fill=W_SHELL, outline=OUT, width=3)
+
+        # ---- orejas (cápsulas laterales con disco azul)
         for side in (-1, 1):
-            c.create_oval(cx + side * 88, 62 + oy, cx + side * 58, 106 + oy,
-                          fill=SHELL_M, outline=OUTLINE, width=2)
-            c.create_oval(cx + side * 82, 70 + oy, cx + side * 64, 98 + oy,
-                          fill=BLUE_MED, outline=BLUE_DARK, width=2)
-            c.create_oval(cx + side * 77, 77 + oy, cx + side * 69, 91 + oy,
-                          fill=BLUE_DARK, outline="")
+            c.create_oval(cx + side * 88, 70 + oy, cx + side * 58, 116 + oy,
+                          fill=W_SHELL, outline=OUT, width=3)
+            c.create_oval(cx + side * 81, 78 + oy, cx + side * 64, 108 + oy,
+                          fill=BLUE, outline=BLUE_DARK, width=2)
 
-        # ---- antena con bolita brillante
-        c.create_line(cx + lean, 34 + oy, cx + lean, 8 + oy,
-                      width=4, fill="#b0b0ab")
-        circle(cx + lean, 8 + oy, 8, fill=BLUE, outline=BLUE_DARK, width=2)
-        circle(cx + lean - 3, 5 + oy, 2.5, fill="#bfe2ff", outline="")
+        # ---- antena
+        c.create_line(cx + lean, 20 + oy, cx + lean, 36 + oy,
+                      width=5, fill=SILVER)
+        circle(cx + lean, 12 + oy, 9, fill=BLUE, outline=OUT, width=2)
+        circle(cx + lean - 3, 9 + oy, 2.6, fill=BLUE_SOFT, outline="")
 
-        # ---- cabeza con brillo en el borde superior
-        shell_oval(cx - 70 + lean, 26 + oy, cx + 70 + lean, 140 + oy)
-        c.create_arc(cx - 60 + lean, 32 + oy, cx + 60 + lean, 130 + oy,
-                     start=55, extent=55, style=tk.ARC,
-                     outline="#ffffff", width=3)
+        # ---- cabeza (casco)
+        c.create_oval(cx - 68 + lean, 30 + oy, cx + 68 + lean, 150 + oy,
+                      fill=W_SHELL, outline=OUT, width=3)
 
-        # ---- visor (pantalla oscura con reflejo)
-        vx1, vy1 = cx - 54 + lean, 44 + oy
-        vx2, vy2 = cx + 54 + lean, 128 + oy
-        c.create_oval(vx1, vy1, vx2, vy2, fill=VISOR_D, outline="#22303f", width=2)
-        c.create_oval(vx1 + 10, vy1 + 5, vx2 - 10, vy1 + 40,
-                      fill=VISOR_M, outline="")
-        c.create_arc(vx1 + 12, vy1 + 8, vx2 - 12, vy2 - 26, start=45, extent=80,
-                     style=tk.ARC, outline="#3e556f", width=3)
+        # ---- visor: marco azul, pantalla negra y destello
+        round_rect(cx - 58 + lean, 52 + oy, cx + 58 + lean, 136 + oy, 30,
+                   fill=BLUE, outline=OUT, width=3)
+        round_rect(cx - 54 + lean, 56 + oy, cx + 54 + lean, 132 + oy, 26,
+                   fill=INK, outline="")
+        c.create_arc(cx - 50 + lean, 58 + oy, cx + 50 + lean, 118 + oy,
+                     start=32, extent=36, style=tk.ARC,
+                     outline="#ffffff", width=5)
 
         # ---- cejas
         for side in (-1, 1):
-            c.create_arc(cx + side * 40 + lean, 56 + oy,
-                         cx + side * 10 + lean, 76 + oy,
-                         start=40, extent=100, style=tk.ARC,
-                         outline=BLUE_GLOSS, width=5)
+            c.create_arc(cx + side * 38 + lean, 66 + oy,
+                         cx + side * 12 + lean, 84 + oy,
+                         start=45, extent=90, style=tk.ARC,
+                         outline=BLUE, width=5)
 
-        # ---- ojos (pupila glossy con aro luminoso y destellos)
+        # ---- ojos (blancos con pupila negra y destellos)
         for side in (-1, 1):
-            ex, ey = cx + side * 25 + lean, 88 + oy
+            ex, ey = cx + side * 26 + lean, 98 + oy
             if self.blink > 0:
                 c.create_line(ex - 12, ey, ex + 12, ey,
-                              fill=GLOW, width=4, capstyle=tk.ROUND)
+                              fill="#ffffff", width=5, capstyle=tk.ROUND)
             else:
-                circle(ex, ey, 18, fill=EYE, outline="#5d9fd8", width=2)
-                circle(ex, ey, 15, fill=EYE, outline="#cfeaff", width=2)
-                c.create_arc(ex - 11, ey - 11, ex + 11, ey + 11,
-                             start=215, extent=110, style=tk.ARC,
-                             outline="#2f6fb4", width=3)
-                circle(ex - 6, ey - 6, 5, fill="#ffffff", outline="")
-                circle(ex + 5, ey + 4, 2.4, fill="#ffffff", outline="")
+                circle(ex, ey, 15, fill="#ffffff", outline="")
+                circle(ex, ey, 10, fill=INK, outline="")
+                circle(ex - 3.5, ey - 3.5, 3.4, fill="#ffffff", outline="")
+                circle(ex + 3, ey + 3, 1.7, fill="#ffffff", outline="")
 
-        # ---- sonrisa
-        c.create_arc(cx - 13 + lean, 100 + oy, cx + 13 + lean, 120 + oy,
-                     start=200, extent=140, style=tk.ARC,
-                     outline=GLOW, width=4)
+        # ---- boca (sonrisa abierta)
+        c.create_arc(cx - 10 + lean, 108 + oy, cx + 10 + lean, 126 + oy,
+                     start=180, extent=180, style=tk.CHORD,
+                     fill="#ffffff", outline="")
 
-        # ---- brazo delantero: saluda (con dedos abiertos) o cuelga
-        sx, sy = cx - f * 44, 158 + oy
+        # ---- brazo delantero: saluda (guante con dedos) o cuelga
+        sx, sy = cx - f * 44, 176 + oy
         if waving:
-            ang = -2.03 + 0.3 * sin(self.wave_phase)
-            hax = sx + f * 70 * cos(ang)
-            hay = sy + 70 * sin(ang)
+            ang = -2.12 + 0.3 * sin(self.wave_phase)
+            hax = sx + f * 80 * cos(ang)
+            hay = sy + 80 * sin(ang)
         else:
-            hax, hay = cx - f * 62 - sway, 198 + oy
+            hax, hay = cx - f * 60 - sway, 214 + oy
         limb(sx, sy, hax, hay)
+        band(sx, sy, hax, hay, 0.72)
         if waving:
             base_a = atan2(hay - sy, hax - sx)
-            for da in (-0.5, 0.0, 0.5):
+            for da in (-0.55, -0.18, 0.18, 0.55):
                 a2 = base_a + da
                 limb(hax + 5 * cos(a2), hay + 5 * sin(a2),
-                     hax + 20 * cos(a2), hay + 20 * sin(a2), thick=6)
-        circle(hax, hay, 11, fill=SHELL_L, outline=OUTLINE, width=2)
-        circle(sx, sy, 8, fill=SHELL_L, outline=BLUE, width=3)
+                     hax + 26 * cos(a2), hay + 26 * sin(a2), thick=7)
+            a2 = base_a + 1.05
+            limb(hax + 4 * cos(a2), hay + 4 * sin(a2),
+                 hax + 17 * cos(a2), hay + 17 * sin(a2), thick=7)
+            circle(hax, hay, 13, fill=W_SHELL, outline=OUT, width=3)
+        else:
+            circle(hax, hay, 11, fill=W_SHELL, outline=OUT, width=3)
+            c.create_arc(hax - 7, hay - 8, hax + 7, hay + 2, start=200,
+                         extent=140, style=tk.ARC, outline=OUT, width=2)
 
     def run(self):
         self.root.mainloop()
