@@ -1,0 +1,63 @@
+# Configuración del sistema de detección de caídas
+# =================================================
+
+cameras:
+  # Puedes agregar tantas cámaras como necesites.
+  # source acepta:
+  #   - URL RTSP de una cámara de vigilancia: "rtsp://usuario:clave@192.168.1.50:554/stream1"
+  #   - URL HTTP/MJPEG: "http://192.168.1.51:8080/video"
+  #   - Índice de webcam local para pruebas: 0
+  #   - Ruta a un archivo de video para pruebas: "videos/prueba.mp4"
+  - name: "Camara Sala"
+    source: 0
+  # - name: "Camara Patio"
+  #   source: "rtsp://admin:password@192.168.1.50:554/Streaming/Channels/101"
+
+detection:
+  # Modelo de pose de YOLOv8: yolov8n-pose.pt (rápido), yolov8s-pose.pt (más preciso)
+  model: "yolov8n-pose.pt"
+  # Confianza mínima para considerar una persona detectada
+  confidence: 0.5
+  # Procesar 1 de cada N cuadros (sube este valor si tu equipo es lento)
+  frame_skip: 2
+  # Segundos que la persona debe permanecer en el suelo para confirmar la caída
+  fall_confirm_seconds: 2.0
+  # Relación ancho/alto del cuadro delimitador a partir de la cual se considera
+  # que la persona está horizontal (acostada)
+  lying_aspect_ratio: 1.0
+  # Ángulo del torso respecto a la vertical (grados) a partir del cual se
+  # considera que la persona está caída
+  torso_angle_threshold: 60
+  # Caída brusca: fracción de la altura del cuerpo que debe bajar el centro de
+  # cadera por segundo para considerarse una caída rápida
+  drop_speed_threshold: 1.0
+
+alerts:
+  # Segundos mínimos entre alertas de la misma cámara (evita spam)
+  cooldown_seconds: 60
+  # Guardar la imagen del momento de la caída en esta carpeta
+  save_snapshots: true
+  snapshot_dir: "capturas"
+
+  telegram:
+    enabled: true
+    # Crea un bot con @BotFather en Telegram y pega aquí el token
+    bot_token: "PON_AQUI_TU_TOKEN"
+    # Tu chat_id (obtén el tuyo escribiendo a @userinfobot). Puede ser un grupo.
+    chat_ids:
+      - "PON_AQUI_TU_CHAT_ID"
+
+  twilio:
+    enabled: false
+    account_sid: ""
+    auth_token: ""
+    # Número de Twilio desde el que se envía (formato E.164)
+    from_number: "+10000000000"
+    # Para WhatsApp usa el prefijo: "whatsapp:+521234567890"
+    to_numbers:
+      - "+521234567890"
+
+display:
+  # Mostrar ventana con el video y las detecciones (requiere entorno gráfico).
+  # Ponlo en false si corres el sistema en un servidor sin pantalla.
+  show_video: true

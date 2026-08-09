@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.pyc
+venv/
+.env
+
+# Modelos descargados de YOLO
+*.pt
+
+# Capturas de caídas detectadas
+capturas/
+
+# Videos de prueba
+videos/
+*.mp4
