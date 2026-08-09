@@ -1,4 +1,15 @@
-# 🚨 Detección de Caídas con Cámaras de Vigilancia y Alertas al Celular
+# 🚨 Vigilancia Inteligente: Caídas y Antirrobo con Alertas al Celular
+
+Dos sistemas que comparten las mismas cámaras y alertas:
+
+- **Detección de caídas** (`main.py`): detecta cuando una persona se cae y
+  permanece en el suelo.
+- **Vigilancia antirrobo para tiendas** (`vigilancia_tienda.py`): detecta
+  intrusiones fuera de horario, personas en zonas restringidas y merodeo.
+
+---
+
+# Parte 1: Detección de Caídas
 
 Sistema de visión por computadora que analiza en tiempo real el video de una o
 varias cámaras de vigilancia, detecta cuando una persona **se cae y permanece
@@ -141,8 +152,83 @@ python main.py -c otra_config.yaml
 - Si la cámara ve camas o sofás de frente, sube `torso_angle_threshold` a 70.
 - Usa `yolov8s-pose.pt` si el equipo lo permite: mejora bastante la precisión.
 
-## Aviso importante
+---
 
-Este sistema es una **ayuda de monitoreo**, no un dispositivo médico
-certificado. No sustituye la supervisión humana ni los botones de pánico o
-servicios de teleasistencia profesionales.
+# Parte 2: Vigilancia Antirrobo para Tiendas
+
+Con las mismas cámaras, `vigilancia_tienda.py` detecta las situaciones de
+riesgo de robo que la visión por computadora sí puede identificar de forma
+fiable:
+
+| Detección | Qué hace | Alerta |
+|-----------|----------|--------|
+| 🌙 **Intrusión fuera de horario** | Cualquier persona dentro de la tienda cuando está cerrada | Inmediata: "posible robo/intrusión" |
+| 🚫 **Zonas restringidas** | Alguien entra detrás del mostrador, a la bodega o junto a una vitrina y permanece unos segundos | "Persona en zona restringida" |
+| 🕵️ **Merodeo** | Una persona permanece varios minutos casi sin moverse en el mismo lugar | "Comportamiento sospechoso" |
+
+> **Nota honesta**: ningún sistema de visión detecta con fiabilidad el momento
+> exacto en que alguien esconde un producto — los que lo prometen generan
+> muchísimas falsas acusaciones. Estas tres señales son las que usan los
+> sistemas comerciales de prevención de pérdidas.
+
+## Uso
+
+```bash
+# 1. Configura tus cámaras, horario y alertas
+nano config_tienda.yaml
+
+# 2. Dibuja las zonas restringidas con clics del mouse sobre el video
+python definir_zonas.py                # webcam
+python definir_zonas.py "rtsp://usuario:clave@IP:554/stream1"
+#    (pega el YAML que imprime dentro de tu cámara en config_tienda.yaml)
+
+# 3. Inicia la vigilancia
+python vigilancia_tienda.py
+```
+
+## Configuración clave (`config_tienda.yaml`)
+
+```yaml
+store:
+  after_hours:
+    enabled: true
+    open_time: "09:00"     # también soporta horarios que cruzan medianoche
+    close_time: "21:00"
+  loitering:
+    enabled: true
+    seconds: 120           # minutos quieto para considerarse merodeo
+    radius: 80             # qué tanto puede moverse y seguir "quieto"
+
+cameras:
+  - name: "Camara Tienda"
+    source: "rtsp://..."
+    zones:
+      - name: "Detras del mostrador"
+        points: [[50, 300], [300, 300], [300, 470], [50, 470]]
+        seconds: 3         # segundos dentro de la zona antes de alertar
+```
+
+Las alertas llegan al celular igual que las de caídas (Telegram/Twilio, con la
+foto del momento), cada tipo de alerta con su propio enfriamiento.
+
+## Cómo probarlo
+
+1. Verifica primero las alertas con `python probar_alerta.py`.
+2. **Zona restringida**: define una zona con `definir_zonas.py`, inicia el
+   sistema y párate dentro de la zona 3 segundos → alerta en el celular.
+3. **Intrusión**: pon `open_time`/`close_time` en un horario en el que la
+   tienda esté "cerrada" ahora mismo y pasa frente a la cámara → alerta
+   inmediata.
+4. **Merodeo**: baja `loitering.seconds` a 15 para la prueba y quédate quieto
+   frente a la cámara.
+
+---
+
+# Aviso importante
+
+Estos sistemas son una **ayuda de monitoreo**, no un dispositivo médico
+certificado ni una prueba de delito. La detección de caídas no sustituye la
+supervisión humana ni los servicios de teleasistencia; una alerta de la
+tienda indica una situación a **verificar por una persona**, nunca una
+acusación automática. Si instalas cámaras en un negocio, cumple la normativa
+local de videovigilancia (avisos visibles, protección de datos, etc.).

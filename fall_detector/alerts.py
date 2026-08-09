@@ -31,30 +31,40 @@ class AlertManager:
         self._lock = threading.Lock()
 
     # ------------------------------------------------------------------ #
-    def notify_fall(self, camera_name: str, frame, timestamp: float):
-        """Envía la alerta si la cámara no está en periodo de enfriamiento."""
+    def notify(self, key: str, camera_name: str, frame, timestamp: float, body: str):
+        """Envía una alerta genérica, respetando el enfriamiento por `key`.
+
+        `key` distingue tipos de alerta de una misma cámara (p. ej.
+        "Camara 1/caida" y "Camara 1/zona" tienen enfriamientos separados).
+        """
         with self._lock:
-            last = self._last_alert.get(camera_name, 0)
+            last = self._last_alert.get(key, 0)
             if time.time() - last < self.cooldown:
-                logger.info(
-                    "[%s] Caída detectada pero la alerta está en enfriamiento.", camera_name
-                )
+                logger.info("[%s] Alerta detectada pero está en enfriamiento.", key)
                 return
-            self._last_alert[camera_name] = time.time()
+            self._last_alert[key] = time.time()
 
         when = datetime.datetime.fromtimestamp(timestamp).strftime("%d/%m/%Y %H:%M:%S")
-        message = (
-            "🚨 ¡ALERTA DE CAÍDA!\n"
-            f"Cámara: {camera_name}\n"
-            f"Hora: {when}\n"
-            "Se detectó que una persona cayó y permanece en el suelo. "
-            "Verifica la situación de inmediato."
-        )
+        message = f"{body}\nCámara: {camera_name}\nHora: {when}"
 
         snapshot_path = self._save_snapshot(camera_name, frame, timestamp)
         threading.Thread(
             target=self._send_all, args=(message, snapshot_path), daemon=True
         ).start()
+
+    def notify_fall(self, camera_name: str, frame, timestamp: float):
+        """Alerta específica de caída de una persona."""
+        self.notify(
+            key=f"{camera_name}/caida",
+            camera_name=camera_name,
+            frame=frame,
+            timestamp=timestamp,
+            body=(
+                "🚨 ¡ALERTA DE CAÍDA!\n"
+                "Se detectó que una persona cayó y permanece en el suelo. "
+                "Verifica la situación de inmediato."
+            ),
+        )
 
     # ------------------------------------------------------------------ #
     def _save_snapshot(self, camera_name: str, frame, timestamp: float) -> str | None:
