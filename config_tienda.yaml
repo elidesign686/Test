@@ -1,0 +1,64 @@
+# Configuración de la vigilancia antirrobo para tiendas
+# ======================================================
+
+cameras:
+  - name: "Camara Tienda"
+    source: 0   # webcam para pruebas; usa tu URL RTSP en producción
+    # Zonas restringidas de ESTA cámara (coordenadas en píxeles del video).
+    # Usa "python definir_zonas.py" para dibujarlas con clics del mouse.
+    zones:
+      - name: "Detras del mostrador"
+        points: [[50, 300], [300, 300], [300, 470], [50, 470]]
+        # Segundos dentro de la zona antes de alertar (evita falsas alarmas
+        # de alguien que solo pasa cerca)
+        seconds: 3
+  # - name: "Camara Bodega"
+  #   source: "rtsp://admin:clave@192.168.1.60:554/stream1"
+  #   zones:
+  #     - name: "Bodega"
+  #       points: [[0, 0], [640, 0], [640, 480], [0, 480]]
+  #       seconds: 2
+
+detection:
+  # Para la tienda basta el modelo de detección normal (más ligero que el de pose)
+  model: "yolov8n.pt"
+  confidence: 0.5
+  frame_skip: 2
+
+store:
+  # Intrusión: cualquier persona detectada fuera de este horario dispara
+  # una alerta inmediata de posible robo.
+  after_hours:
+    enabled: true
+    open_time: "09:00"
+    close_time: "21:00"
+
+  # Merodeo: persona que permanece demasiado tiempo casi sin moverse.
+  loitering:
+    enabled: true
+    # Segundos quieto en la misma zona para considerarse merodeo
+    seconds: 120
+    # Radio de movimiento (píxeles) por debajo del cual se considera "quieto"
+    radius: 80
+
+alerts:
+  cooldown_seconds: 60
+  save_snapshots: true
+  snapshot_dir: "capturas"
+
+  telegram:
+    enabled: true
+    bot_token: "PON_AQUI_TU_TOKEN"
+    chat_ids:
+      - "PON_AQUI_TU_CHAT_ID"
+
+  twilio:
+    enabled: false
+    account_sid: ""
+    auth_token: ""
+    from_number: "+10000000000"
+    to_numbers:
+      - "+521234567890"
+
+display:
+  show_video: true
